@@ -1,0 +1,72 @@
+apiVersion: skaffold/v2beta24
+kind: Config
+metadata:
+  name: multistage-build-and-cache
+profiles:
+  # Development environment
+  - name: dev
+    activation:
+      - env: GIT_BRANCH_PREFIX=develop
+    build:
+      artifacts:
+        - image: multistage-build-and-cache-builder
+          context: .
+          hooks:
+            after:
+              - command:
+                  - sh
+                  - -cx
+                  - |
+                    docker tag $SKAFFOLD_IMAGE $SKAFFOLD_IMAGE_REPO/multistage-build-and-cache:develop-builder-cache
+                    docker push $SKAFFOLD_IMAGE_REPO/multistage-build-and-cache:develop-builder-cache
+          docker:
+            dockerfile: Dockerfile
+            target: builder
+            cacheFrom:
+              - "artemkoru/multistage-build-and-cache:develop-builder-cache"
+            buildArgs:
+              BUILDKIT_INLINE_CACHE: "1"
+        - image: multistage-build-and-cache
+          context: .
+          docker:
+            dockerfile: Dockerfile
+      local:
+        useBuildkit: true
+      tagPolicy:
+        envTemplate:
+          template: "develop-{{.GIT_COMMIT}}"
+
+  # Dynamic environment for any git branch
+  - name: branch
+    activation:
+      - env: GIT_BRANCH_PREFIX=feature
+      - env: GIT_BRANCH_PREFIX=bugfix
+    build:
+      artifacts:
+        - image: multistage-build-and-cache-builder
+          context: .
+          hooks:
+            after:
+              - command:
+                  - sh
+                  - -cx
+                  - |
+                    docker tag $SKAFFOLD_IMAGE $SKAFFOLD_IMAGE_REPO/multistage-build-and-cache:$GIT_BRANCH_DASH-builder-cache
+                    docker push $SKAFFOLD_IMAGE_REPO/multistage-build-and-cache:$GIT_BRANCH_DASH-builder-cache
+          docker:
+            dockerfile: Dockerfile
+            target: builder
+            cacheFrom:
+              # THE PROBLEM IS HERE: Using env-vars unsupported in skaffold v1.33.0
+              - "{{.SKAFFOLD_DEFAULT_REPO}}/multistage-build-and-cache:{{.GIT_BRANCH_DASH}}-builder-cache"
+            buildArgs:
+              BUILDKIT_INLINE_CACHE: "1"
+        - image: multistage-build-and-cache
+          context: .
+          docker:
+            dockerfile: Dockerfile
+      local:
+        useBuildkit: true
+      tagPolicy:
+        envTemplate:
+          template: "{{.GIT_BRANCH_DASH}}-{{.GIT_COMMIT}}"

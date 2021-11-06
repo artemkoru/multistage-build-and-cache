@@ -2,7 +2,7 @@
 
 This repo demonstates how skaffold works with environment variables in the configuration parameter `build.artifacts[*].docker.cacheFrom`.
 
-Issue: 
+Issue: https://github.com/GoogleContainerTools/skaffold/issues/6809
 Skaffold version: v1.34.0
 OS: MacOS
 

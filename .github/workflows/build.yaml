@@ -39,6 +39,10 @@ jobs:
           key: ${{ runner.os }}-skaffold-${{ github.event.ref }}
           restore-keys: |
             ${{ runner.os }}-skaffold
+      
+      - name: Emulate code changes
+        run: |
+          cat /proc/sys/kernel/random/uuid 2>/dev/null || uuidgen > somefile
 
       - name: Build
         run: |

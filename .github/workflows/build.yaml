@@ -1,0 +1,48 @@
+name: Build
+
+on:
+  push:
+    branches: [ '*' ]
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-18.04
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Setup skaffold
+        run: |
+          curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/$SKAFFOLD_VERSION/skaffold-linux-amd64
+          sudo install skaffold /usr/local/bin/
+          skaffold version
+        env:
+          SKAFFOLD_VERSION: v1.34.0
+  
+      - name: Init docker
+        run: |
+          echo $CI_DOCKER_PASSWORD | docker login --username artemkoru --password-stdin
+        env:
+          CI_DOCKER_PASSWORD: ${{ secrets.CI_DOCKER_PASSWORD }}
+
+      - name: Load skaffold cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.skaffold
+          key: ${{ runner.os }}-skaffold-${{ github.event.ref }}
+          restore-keys: |
+            ${{ runner.os }}-skaffold
+
+      - name: Build
+        run: |
+          . .envrc
+          skaffold build
+        env:
+          SKAFFOLD_DEFAULT_REPO: artemkoru

@@ -1,9 +1,9 @@
 FROM busybox as builder
 
-RUN touch /somefile
-
 # very log build command here
-RUN sleep 60
+RUN sleep 15
+
+COPY somefile .
 
 FROM busybox
 
